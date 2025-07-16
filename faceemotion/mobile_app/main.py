@@ -9,8 +9,11 @@ import sys
 import traceback
 from datetime import datetime
 
-# Add model path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+# Set up paths
+APP_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_DIR = os.path.join(APP_DIR, 'model')
+if not os.path.exists(MODEL_DIR):
+    os.makedirs(MODEL_DIR)
 
 # Check if running as APK or Streamlit
 RUNNING_AS_APK = False

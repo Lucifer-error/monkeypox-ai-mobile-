@@ -1,17 +1,13 @@
 # Mobile App Requirements
-# For Progressive Web App (PWA) - Streamlit version
-streamlit>=1.28.0
-pillow>=10.0.0
-torch>=2.0.0
-torchvision>=0.15.0
-numpy>=1.24.0
-
-# For Native Mobile App - Kivy version (optional)
-kivy>=2.1.0
-kivymd>=1.1.1
-plyer>=2.1
-requests>=2.31.0
-opencv-python>=4.8.0
+kivy==2.1.0
+kivymd==1.1.1
+pillow==10.0.0
+torch==2.0.0
+torchvision==0.15.0
+numpy==1.24.0
+plyer==2.1.0
+certifi==2023.7.22
+requests==2.31.0
 
 # For React Native/Expo version (future development)
 # See package.json for JS dependencies
