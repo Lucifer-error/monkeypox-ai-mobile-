@@ -1,0 +1,127 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+      
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        
+    - name: Install system dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y \
+          build-essential \
+          git \
+          ffmpeg \
+          libsdl2-dev \
+          libsdl2-image-dev \
+          libsdl2-mixer-dev \
+          libsdl2-ttf-dev \
+          libportmidi-dev \
+          libswscale-dev \
+          libavformat-dev \
+          libavcodec-dev \
+          zlib1g-dev \
+          libgstreamer1.0 \
+          gstreamer1.0-plugins-base \
+          gstreamer1.0-plugins-good
+          
+    - name: Install Java JDK 8
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'
+        java-version: '8'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v2
+      
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install buildozer cython
+        pip install kivy kivymd plyer
+        pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+        pip install pillow numpy
+        
+    - name: Cache Buildozer global directory
+      uses: actions/cache@v3
+      with:
+        path: .buildozer_global
+        key: buildozer-global-${{ hashFiles('buildozer.spec') }}
+        
+    - name: Cache Buildozer directory
+      uses: actions/cache@v3
+      with:
+        path: .buildozer
+        key: ${{ runner.os }}-${{ hashFiles('buildozer.spec') }}
+        
+    - name: Build APK with Buildozer
+      working-directory: faceemotion/mobile_app
+      run: |
+        # Set environment variables
+        export ANDROID_SDK_ROOT=$ANDROID_HOME
+        export ANDROID_NDK_ROOT=$ANDROID_HOME/ndk/21.4.7075529
+        
+        # Create necessary directories
+        mkdir -p ../monkeypox_model
+        
+        # Copy model files (if they exist)
+        cp ../../monkeypox_model/*.py ../monkeypox_model/ || true
+        cp ../../monkeypox_model/*.pth ../monkeypox_model/ || echo "Model file not found - APK will work without AI"
+        
+        # Build the APK
+        buildozer android debug
+        
+    - name: Upload APK artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: monkeypox-ai-classifier-apk
+        path: faceemotion/mobile_app/bin/*.apk
+        
+    - name: Create Release
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: v${{ github.run_number }}
+        name: Monkeypox AI Classifier v${{ github.run_number }}
+        body: |
+          🧠 Monkeypox AI Classifier - Mobile Android App
+          
+          📱 **Installation Instructions:**
+          1. Download the APK file below
+          2. Enable "Unknown Sources" in Android Settings > Security
+          3. Install the APK on your Android device
+          4. Grant camera and storage permissions when prompted
+          
+          🏥 **Medical Disclaimer:**
+          This app provides AI screening only - NOT medical diagnosis.
+          Always consult healthcare professionals for medical advice.
+          
+          🔧 **Features:**
+          - AI-powered skin lesion classification
+          - Camera integration for photo capture
+          - Medical guidance and emergency contacts
+          - Offline functionality
+          - Privacy-focused (no data leaves device)
+          
+          ⚠️ **Important:** This is for educational and screening purposes only.
+          
+        files: faceemotion/mobile_app/bin/*.apk
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
